@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Expansión de Tuberías</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f7fa;
+            color: #333;
+        }
+        .container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .input-section, .result-section {
+            flex: 1;
+            min-width: 300px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .diagram-section {
+            flex: 100%;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        h2 {
+            color: #3498db;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            width: 100%;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        .result-box {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-top: 10px;
+            border-left: 4px solid #3498db;
+        }
+        .result-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .formula {
+            background-color: #f1f8e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            overflow-x: auto;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+            max-width: 100%;
+        }
+        .note {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .coefficient-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        .coefficient-table th, .coefficient-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        .coefficient-table th {
+            background-color: #f2f2f2;
+        }
+        .highlight {
+            background-color: #e3f2fd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Calculadora de Expansión de Tuberías</h1>
+    
+    <div class="container">
+        <div class="diagram-section">
+            <h2>Diagrama de la Expansión</h2>
+            <canvas id="pipeDiagram" width="800" height="200"></canvas>
+        </div>
+        
+        <div class="input-section">
+            <h2>Datos de Entrada</h2>
+            <div class="form-group">
+                <label for="d1">Diámetro inicial (d₁) [cm]:</label>
+                <input type="number" id="d1" min="0.1" step="0.1" value="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="d2">Diámetro final (d₂) [cm]:</label>
+                <input type="number" id="d2" min="0.1" step="0.1" value="9">
+            </div>
+            
+            <div class="form-group">
+                <label for="angle">Ángulo de expansión (θ):</label>
+                <select id="angle">
+                    <option value="30">30°</option>
+                    <option value="45">45°</option>
+                    <option value="60">60°</option>
+                </select>
+                <div class="note">K<sub>L</sub> = 0.02 para θ = 30° | K<sub>L</sub> = 0.04 para θ = 45° | K<sub>L</sub> = 0.07 para θ = 60°</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="v1">Velocidad inicial (V₁) [m/s]:</label>
+                <input type="number" id="v1" min="0.1" step="0.1" value="7">
+            </div>
+            
+            <div class="form-group">
+                <label for="p1">Presión inicial (P₁) [kPa]:</label>
+                <input type="number" id="p1" min="0" step="1" value="150">
+            </div>
+            
+            <button id="calculateBtn">Calcular</button>
+        </div>
+        
+        <div class="result-section">
+            <h2>Resultados</h2>
+            
+            <div class="form-group">
+                <label>Coeficiente de pérdida (K<sub>L</sub>):</label>
+                <div class="result-box">
+                    <span id="klValue" class="result-value">-</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Velocidad final (V₂) [m/s]:</label>
+                <div class="result-box">
+                    <span id="v2Value" class="result-value">-</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Pérdida de carga (h<sub>L</sub>) [m]:</label>
+                <div class="result-box">
+                    <span id="hlValue" class="result-value">-</span>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Presión final (P₂) [kPa]:</label>
+                <div class="result-box">
+                    <span id="p2Value" class="result-value">-</span>
+                </div>
+            </div>
+            
+            <h3>Fórmulas utilizadas:</h3>
+            <div class="formula">
+                V₂ = (A₁/A₂) × V₁ = (d₁²/d₂²) × V₁<br>
+                h<sub>L</sub> = K<sub>L</sub> × (V₁ - V₂)² / (2g)<br>
+                P₂ = P₁ + ρg[(V₁² - V₂²)/(2g) - h<sub>L</sub>]
+            </div>
+            
+            <h3>Coeficientes de pérdida:</h3>
+            <table class="coefficient-table">
+                <thead>
+                    <tr>
+                        <th>Ángulo (θ)</th>
+                        <th>K<sub>L</sub></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr id="row30">
+                        <td>30°</td>
+                        <td>0.02</td>
+                    </tr>
+                    <tr id="row45">
+                        <td>45°</td>
+                        <td>0.04</td>
+                    </tr>
+                    <tr id="row60">
+                        <td>60°</td>
+                        <td>0.07</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('pipeDiagram');
+            const ctx = canvas.getContext('2d');
+            
+            // Elementos de entrada
+            const d1Input = document.getElementById('d1');
+            const d2Input = document.getElementById('d2');
+            const angleInput = document.getElementById('angle');
+            const v1Input = document.getElementById('v1');
+            const p1Input = document.getElementById('p1');
+            const calculateBtn = document.getElementById('calculateBtn');
+            
+            // Elementos de resultado
+            const klValue = document.getElementById('klValue');
+            const v2Value = document.getElementById('v2Value');
+            const hlValue = document.getElementById('hlValue');
+            const p2Value = document.getElementById('p2Value');
+            
+            // Constantes
+            const RHO = 1000; // Densidad del agua (kg/m³)
+            const G = 9.81;   // Gravedad (m/s²)
+            
+            // Dibujar diagrama inicial
+            drawDiagram();
+            
+            // Calcular al hacer clic en el botón
+            calculateBtn.addEventListener('click', calculate);
+            
+            // Recalcular cuando cambian los valores
+            [d1Input, d2Input, angleInput, v1Input, p1Input].forEach(input => {
+                input.addEventListener('input', function() {
+                    if (this === angleInput) {
+                        updateHighlightedRow();
+                    }
+                    drawDiagram();
+                });
+            });
+            
+            // Inicializar fila resaltada
+            updateHighlightedRow();
+            
+            function updateHighlightedRow() {
+                // Quitar resaltado de todas las filas
+                document.getElementById('row30').classList.remove('highlight');
+                document.getElementById('row45').classList.remove('highlight');
+                document.getElementById('row60').classList.remove('highlight');
+                
+                // Resaltar la fila correspondiente al ángulo seleccionado
+                const angle = angleInput.value;
+                document.getElementById(`row${angle}`).classList.add('highlight');
+            }
+            
+            function drawDiagram() {
+                const d1 = parseFloat(d1Input.value);
+                const d2 = parseFloat(d2Input.value);
+                const angle = parseInt(angleInput.value);
+                
+                // Limpiar canvas
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Dimensiones y posiciones
+                const centerY = canvas.height / 2;
+                const startX = 50;
+                const pipeLength = 200;
+                const expansionLength = 150;
+                
+                // Dibujar tubería inicial
+                const r1 = d1 * 2; // Escalar para visualización
+                ctx.beginPath();
+                ctx.rect(startX, centerY - r1/2, pipeLength, r1);
+                ctx.fillStyle = '#3498db';
+                ctx.fill();
+                ctx.stroke();
+                
+                // Dibujar sección de expansión
+                const expansionStartX = startX + pipeLength;
+                const r2 = d2 * 2; // Escalar para visualización
+                
+                ctx.beginPath();
+                ctx.moveTo(expansionStartX, centerY - r1/2);
+                ctx.lineTo(expansionStartX + expansionLength, centerY - r2/2);
+                ctx.lineTo(expansionStartX + expansionLength, centerY + r2/2);
+                ctx.lineTo(expansionStartX, centerY + r1/2);
+                ctx.closePath();
+                ctx.fillStyle = '#5dade2';
+                ctx.fill();
+                ctx.stroke();
+                
+                // Dibujar tubería final
+                const finalStartX = expansionStartX + expansionLength;
+                ctx.beginPath();
+                ctx.rect(finalStartX, centerY - r2/2, pipeLength, r2);
+                ctx.fillStyle = '#3498db';
+                ctx.fill();
+                ctx.stroke();
+                
+                // Dibujar líneas de dimensión
+                ctx.strokeStyle = '#2c3e50';
+                ctx.lineWidth = 1;
+                
+                // Diámetro inicial
+                ctx.beginPath();
+                ctx.moveTo(startX + pipeLength/2, centerY - r1/2 - 10);
+                ctx.lineTo(startX + pipeLength/2, centerY + r1/2 + 10);
+                ctx.stroke();
+                
+                ctx.font = '14px Arial';
+                ctx.fillStyle = '#2c3e50';
+                ctx.fillText(`d₁ = ${d1} cm`, startX + pipeLength/2 - 20, centerY - r1/2 - 15);
+                
+                // Diámetro final
+                ctx.beginPath();
+                ctx.moveTo(finalStartX + pipeLength/2, centerY - r2/2 - 10);
+                ctx.lineTo(finalStartX + pipeLength/2, centerY + r2/2 + 10);
+                ctx.stroke();
+                
+                ctx.fillText(`d₂ = ${d2} cm`, finalStartX + pipeLength/2 - 20, centerY - r2/2 - 15);
+                
+                // Ángulo de expansión
+                ctx.beginPath();
+                ctx.arc(expansionStartX, centerY, 30, 0, angle * Math.PI / 180);
+                ctx.stroke();
+                
+                ctx.fillText(`θ = ${angle}°`, expansionStartX + 20, centerY - 20);
+                
+                // Flechas de flujo
+                drawArrow(ctx, startX + 20, centerY, startX + pipeLength - 20, centerY);
+                drawArrow(ctx, finalStartX + 20, centerY, finalStartX + pipeLength - 20, centerY);
+                
+                // Etiquetas
+                ctx.fillText("V₁, P₁", startX + pipeLength/2 - 15, centerY - r1/2 - 30);
+                ctx.fillText("V₂, P₂", finalStartX + pipeLength/2 - 15, centerY - r2/2 - 30);
+            }
+            
+            function drawArrow(ctx, fromX, fromY, toX, toY) {
+                const headlen = 10;
+                const angle = Math.atan2(toY - fromY, toX - fromX);
+                
+                ctx.beginPath();
+                ctx.moveTo(fromX, fromY);
+                ctx.lineTo(toX, toY);
+                ctx.stroke();
+                
+                ctx.beginPath();
+                ctx.moveTo(toX, toY);
+                ctx.lineTo(toX - headlen * Math.cos(angle - Math.PI/6), toY - headlen * Math.sin(angle - Math.PI/6));
+                ctx.lineTo(toX - headlen * Math.cos(angle + Math.PI/6), toY - headlen * Math.sin(angle + Math.PI/6));
+                ctx.closePath();
+                ctx.fillStyle = '#2c3e50';
+                ctx.fill();
+            }
+            
+            function calculate() {
+                // Obtener valores de entrada
+                const d1 = parseFloat(d1Input.value) / 100; // Convertir a metros
+                const d2 = parseFloat(d2Input.value) / 100; // Convertir a metros
+                const angle = parseInt(angleInput.value);
+                const v1 = parseFloat(v1Input.value);
+                const p1 = parseFloat(p1Input.value) * 1000; // Convertir a Pa
+                
+                // Obtener coeficiente de pérdida según el ángulo
+                let kl;
+                switch(angle) {
+                    case 30: kl = 0.02; break;
+                    case 45: kl = 0.04; break;
+                    case 60: kl = 0.07; break;
+                    default: kl = 0.02;
+                }
+                
+                // Calcular áreas
+                const a1 = Math.PI * Math.pow(d1, 2) / 4;
+                const a2 = Math.PI * Math.pow(d2, 2) / 4;
+                
+                // Calcular velocidad final (V2)
+                const v2 = (a1 / a2) * v1;
+                
+                // Calcular pérdida de carga (hL)
+                const hL = kl * Math.pow(v1 - v2, 2) / (2 * G);
+                
+                // Calcular presión final (P2)
+                const p2 = p1 + RHO * G * ((Math.pow(v1, 2) - Math.pow(v2, 2)) / (2 * G) - hL);
+                
+                // Mostrar resultados
+                klValue.textContent = kl.toFixed(3);
+                v2Value.textContent = v2.toFixed(3);
+                hlValue.textContent = hL.toFixed(4);
+                p2Value.textContent = (p2 / 1000).toFixed(2); // Convertir a kPa
+            }
+            
+            // Calcular automáticamente al cargar la página
+            calculate();
+        });
+    </script>
+</body>
+</html>
