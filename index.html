@@ -235,9 +235,7 @@
 
 
     <script>
-        if ("serviceWorker" in navigator) {
-            navigator.serviceWorker.register("service-worker.js");
-          }
+
         document.addEventListener('DOMContentLoaded', function() {
             const canvas = document.getElementById('pipeDiagram');
             const ctx = canvas.getContext('2d');
@@ -430,11 +428,16 @@
             // Calcular automáticamente al cargar la página
             calculate();
         });
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js")
+      .    then(() => console.log("Service Worker registrado ✔"));
+          }    
     </script>
 </body>
 
 
 </html>
+
 
 
 
