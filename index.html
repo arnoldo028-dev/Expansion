@@ -231,8 +231,16 @@
             </table>
         </div>
     </div>
+<link rel="manifest" href="manifest.json">
+
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("service-worker.js");
+  }
 
     <script>
+        if ("serviceWorker" in navigator) {
+            navigator.serviceWorker.register("service-worker.js");
+          }
         document.addEventListener('DOMContentLoaded', function() {
             const canvas = document.getElementById('pipeDiagram');
             const ctx = canvas.getContext('2d');
@@ -425,14 +433,10 @@
             // Calcular automáticamente al cargar la página
             calculate();
         });
-    //</script>
-//</body>
-<link rel="manifest" href="manifest.json">
-// <script>
-  if ("serviceWorker" in navigator) {
-    navigator.serviceWorker.register("service-worker.js");
-  }
-</script>
+    </script>
+</body>
+
 
 </html>
+
 
